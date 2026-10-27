@@ -1,0 +1,15 @@
+{
+  "name": "Nycel Finance",
+  "short_name": "Nycel Finance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f2847",
+  "theme_color": "#0f2847",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
