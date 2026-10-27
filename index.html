@@ -97,7 +97,6 @@
 
         <!-- ================= VIEW 3: ANALISIS ================= -->
         <div id="view-analisis" class="view-section hidden px-5 mt-6 space-y-4">
-            <!-- Grid Rata-rata & Total -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-blue-50/80 p-4 rounded-2xl border border-blue-100">
                     <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Rata-rata Harian</p>
@@ -109,7 +108,6 @@
                 </div>
             </div>
 
-            <!-- Komposisi Pengeluaran (Donut Chart) -->
             <div class="bg-white rounded-[1.25rem] p-5 shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-4">
                     <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Komposisi Pengeluaran</h4>
@@ -121,7 +119,6 @@
                 <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600 pt-2 border-t border-gray-50" id="analisis-legend"></div>
             </div>
 
-            <!-- Tren Pengeluaran (Line Chart) -->
             <div class="bg-white rounded-[1.25rem] p-5 shadow-sm border border-gray-100">
                 <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Tren Pengeluaran</h4>
                 <p class="text-[11px] text-gray-400 mb-4">4 Minggu Terakhir</p>
@@ -131,65 +128,63 @@
             </div>
         </div>
 
-        <!-- ================= VIEW 4: ANGGARAN ================= -->
-        <div id="view-anggaran" class="view-section hidden px-5 mt-6 space-y-4">
-            <!-- Kuota Bulanan Card -->
-            <div class="bg-white rounded-[1.25rem] p-5 shadow-sm border border-gray-100">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">&bull; Kuota Bulanan</span>
-                    <span class="text-[10px] bg-green-100 text-green-700 font-bold px-2.5 py-0.5 rounded-full">Bulan Ini</span>
+        <!-- ================= VIEW 4: RENCANA (GABUNGAN ANGGARAN & TARGET) ================= -->
+        <div id="view-rencana" class="view-section hidden px-5 mt-6 space-y-6">
+            
+            <!-- SUB-SEKSI 1: ANGGARAN BULANAN -->
+            <div class="space-y-3">
+                <div class="bg-white rounded-[1.25rem] p-5 shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">&bull; Kuota Bulanan</span>
+                        <span class="text-[10px] bg-green-100 text-green-700 font-bold px-2.5 py-0.5 rounded-full">Bulan Ini</span>
+                    </div>
+                    <h2 class="text-2xl font-black text-gray-800 tracking-tight format-money" id="anggaran-total-budget" data-value="0">Rp 0</h2>
+                    <p class="text-xs text-gray-400 mt-1">Total alokasi batas batas pengeluaran</p>
                 </div>
-                <h2 class="text-2xl font-black text-gray-800 tracking-tight format-money" id="anggaran-total-budget" data-value="0">Rp 0</h2>
-                <p class="text-xs text-gray-400 mt-1">Terpakai dari total anggaran yang ditentukan</p>
-                <div class="w-full bg-gray-100 rounded-full h-2.5 mt-3 overflow-hidden">
-                    <div id="anggaran-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+
+                <div class="flex justify-between items-center pt-1">
+                    <h3 class="text-[14px] font-bold text-gray-800">Kategori Anggaran</h3>
+                    <button id="btn-tambah-kategori" class="text-xs bg-blue-50 text-blue-600 font-bold px-3 py-1.5 rounded-full border border-blue-100"><i class="fa-solid fa-plus mr-1"></i> Kategori</button>
                 </div>
+
+                <div class="space-y-2.5" id="anggaran-list-container"></div>
             </div>
 
-            <div class="flex justify-between items-center pt-2">
-                <h3 class="text-[14px] font-bold text-gray-800">Kategori Anggaran</h3>
-                <button id="btn-tambah-kategori" class="text-xs bg-blue-50 text-blue-600 font-bold px-3 py-1.5 rounded-full border border-blue-100"><i class="fa-solid fa-plus mr-1"></i> Tambah Kategori</button>
-            </div>
+            <hr class="border-gray-200 my-4">
 
-            <!-- List Kategori Anggaran -->
-            <div class="space-y-3" id="anggaran-list-container"></div>
+            <!-- SUB-SEKSI 2: TARGET TABUNGAN -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-[14px] font-bold text-gray-800">Amplop Target (Sinking Funds)</h3>
+                    <button id="btn-tambah-target" class="text-xs bg-blue-50 text-blue-600 font-bold px-3 py-1.5 rounded-full border border-blue-100"><i class="fa-solid fa-plus mr-1"></i> Target</button>
+                </div>
+                <div class="space-y-3" id="target-list-container"></div>
+            </div>
         </div>
 
-        <!-- ================= VIEW 5: TARGET ================= -->
-        <div id="view-target" class="view-section hidden px-5 mt-6">
-            <div class="flex justify-between items-center mb-5">
-                <h3 class="text-[15px] font-bold text-gray-800">Amplop Virtual (Sinking Funds)</h3>
-                <button id="btn-tambah-target" class="text-[11px] bg-blue-50 text-blue-600 font-bold px-3 py-1.5 rounded-full border border-blue-100"><i class="fa-solid fa-plus mr-1"></i> Target Baru</button>
-            </div>
-            <div class="space-y-4" id="target-list-container"></div>
-        </div>
-
-        <!-- BOTTOM NAVIGATION -->
-        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-100 flex justify-between items-center px-4 py-2 pb-6 z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] text-[10px] font-bold">
-            <button id="nav-home" class="nav-btn flex flex-col items-center text-[#0f2847] w-12 transition">
-                <i class="fa-solid fa-house text-lg"></i>
+        <!-- BOTTOM NAVIGATION (PAS 4 MENU SIMETRIS + 1 TOMBOL TENGAH) -->
+        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-100 flex justify-around items-center px-2 py-2 pb-6 z-40 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] text-[10px] font-bold">
+            <button id="nav-home" class="nav-btn flex flex-col items-center text-[#0f2847] w-14 transition">
+                <i class="fa-solid fa-house text-base"></i>
                 <span class="mt-1">Beranda</span>
             </button>
-            <button id="nav-dompet" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-12 transition">
-                <i class="fa-solid fa-wallet text-lg"></i>
+            <button id="nav-dompet" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-14 transition">
+                <i class="fa-solid fa-wallet text-base"></i>
                 <span class="mt-1">Dompet</span>
             </button>
             
+            <!-- Tombol Tambah di Tengah -->
             <button id="btn-tambah" class="relative -top-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white w-14 h-14 rounded-full shadow-[0_8px_20px_rgba(59,130,246,0.4)] flex items-center justify-center hover:scale-105 transition-transform duration-200">
                 <i class="fa-solid fa-plus text-2xl"></i>
             </button>
 
-            <button id="nav-analisis" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-12 transition">
-                <i class="fa-solid fa-chart-line text-lg"></i>
+            <button id="nav-analisis" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-14 transition">
+                <i class="fa-solid fa-chart-line text-base"></i>
                 <span class="mt-1">Analisis</span>
             </button>
-            <button id="nav-anggaran" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-12 transition">
-                <i class="fa-solid fa-pie-chart text-lg"></i>
-                <span class="mt-1">Anggaran</span>
-            </button>
-            <button id="nav-target" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-12 transition">
-                <i class="fa-solid fa-bullseye text-lg"></i>
-                <span class="mt-1">Target</span>
+            <button id="nav-rencana" class="nav-btn flex flex-col items-center text-gray-400 hover:text-[#0f2847] w-14 transition">
+                <i class="fa-solid fa-sliders text-base"></i>
+                <span class="mt-1">Rencana</span>
             </button>
         </nav>
 
@@ -222,7 +217,7 @@
                     <!-- Tombol OCR -->
                     <div id="wrapper-ocr" class="mb-4">
                         <button type="button" id="btn-scan" class="w-full bg-indigo-50 text-indigo-600 font-bold py-3 rounded-xl border border-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-100 transition shadow-sm text-sm">
-                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR Pintar)
+                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR Kurang Pintar)
                         </button>
                         <input type="file" id="input-file-ocr" accept="image/*" capture="environment" class="hidden">
                         <div id="ocr-status" class="text-xs text-center font-medium mt-2 hidden text-indigo-500"></div>
@@ -242,12 +237,9 @@
                         </select>
                     </div>
 
-                    <!-- Dropdown Kategori Anggaran -->
                     <div id="wrapper-kategori-anggaran">
                         <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Kategori Anggaran</label>
-                        <select id="input-kategori-anggaran" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none">
-                            <!-- Options Render Dynamic -->
-                        </select>
+                        <select id="input-kategori-anggaran" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none"></select>
                     </div>
 
                     <div id="wrapper-dompet-tujuan" class="hidden">
@@ -320,7 +312,6 @@
                     <p class="text-xs text-gray-500 mt-1">Mode: <span class="text-blue-600 font-bold">Shared Ledger Publik</span></p>
                     <p class="text-[11px] text-gray-400 mt-2">Semua HP/PC dengan link ini terhubung ke buku kas yang sama.</p>
                 </div>
-                <button id="btn-logout" class="w-full bg-red-50 text-red-600 font-bold py-3.5 rounded-xl border border-red-100 hover:bg-red-100 transition text-sm">Reset Sesi Lokal</button>
             </div>
         </div>
 
@@ -387,7 +378,6 @@
         let chartKomposisiInstance = null;
         let chartTrenInstance = null;
 
-        // Sensor Formatting Helper
         const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
         const formatSingkat = (angka) => {
             if (angka >= 1000000) return 'Rp ' + (angka / 1000000).toFixed(1) + 'M';
@@ -406,21 +396,15 @@
             });
         };
 
-        // Toggle Sensor Nominal
         document.getElementById('btn-toggle-sensor').addEventListener('click', () => {
             isSensorActive = !isSensorActive;
             const icon = document.getElementById('icon-sensor');
-            if (isSensorActive) {
-                icon.className = 'fa-regular fa-eye-slash text-base text-yellow-300';
-            } else {
-                icon.className = 'fa-regular fa-eye text-base';
-            }
+            icon.className = isSensorActive ? 'fa-regular fa-eye-slash text-base text-yellow-300' : 'fa-regular fa-eye text-base';
             updateUI();
         });
 
         document.getElementById('input-tanggal').valueAsDate = new Date();
 
-        // Form Toggle Handler
         document.querySelectorAll('input[name="tipe"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const val = e.target.value;
@@ -511,14 +495,13 @@
             inputFileOcr.value = '';
         });
 
-        // SPA Navigation
-        const views = ['home', 'dompet', 'analisis', 'anggaran', 'target'];
+        // SPA Navigation (4 View Simetris)
+        const views = ['home', 'dompet', 'analisis', 'rencana'];
         const viewTitles = {
             home: 'Sistem Keuangan Rumah Tangga',
             dompet: 'Rincian Dompet & Rekening',
             analisis: 'Analisis Pengeluaran',
-            anggaran: 'Manajemen Anggaran',
-            target: 'Amplop Virtual & Tabungan'
+            rencana: 'Perencanaan & Target Tabungan'
         };
 
         function switchView(activeView) {
@@ -543,7 +526,6 @@
             document.getElementById(`nav-${v}`).addEventListener('click', () => switchView(v));
         });
 
-        // Modals Helper
         const setupModal = (modalId, contentId, openBtnId, closeBtnClass) => {
             const modal = document.getElementById(modalId);
             const content = document.getElementById(contentId);
@@ -567,7 +549,6 @@
         const toggleModalSetting = setupModal('modal-setting', 'modal-setting-content', 'btn-setting', '#btn-tutup-setting');
         const toggleModalNotif = setupModal('modal-notif', 'modal-notif-content', 'btn-notif', '#btn-tutup-notif');
 
-        // Populate Dynamic Category Dropdown
         const renderCategoryDropdown = () => {
             const select = document.getElementById('input-kategori-anggaran');
             select.innerHTML = '';
@@ -576,13 +557,11 @@
             });
         };
 
-        // Render Analytics Charts (Chart.js)
         const renderCharts = () => {
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
 
-            // Total bulan ini
             const transBulanIni = transaksiList.filter(t => {
                 const d = new Date(t.tanggal || t.timestamp?.toDate());
                 return d.getMonth() === currentMonth && d.getFullYear() === currentYear && t.tipe === 'keluar';
@@ -595,7 +574,6 @@
             document.getElementById('analisis-total-bulan').setAttribute('data-value', totalKeluarBulanIni);
             document.getElementById('analisis-nama-bulan').innerText = now.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
 
-            // Chart Komposisi (Donut)
             const katTotals = {};
             kategoriList.forEach(k => katTotals[k.nama] = 0);
             katTotals['Lainnya'] = 0;
@@ -623,13 +601,9 @@
                         borderWidth: 0
                     }]
                 },
-                options: {
-                    cutout: '70%',
-                    plugins: { legend: { display: false } }
-                }
+                options: { cutout: '70%', plugins: { legend: { display: false } } }
             });
 
-            // Legend Donut
             const legendContainer = document.getElementById('analisis-legend');
             legendContainer.innerHTML = '';
             labels.forEach((lbl, idx) => {
@@ -643,7 +617,6 @@
                 `;
             });
 
-            // Chart Tren (Line)
             const ctxLine = document.getElementById('chartTren').getContext('2d');
             if (chartTrenInstance) chartTrenInstance.destroy();
 
@@ -664,17 +637,13 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { display: false }
-                    }
+                    scales: { x: { grid: { display: false } }, y: { display: false } }
                 }
             });
 
             applySensor();
         };
 
-        // Render UI Total & List
         const updateUI = () => {
             let totalSaldo = 0;
             const dompet = { BCA: 0, BSI: 0, BNI: 0, BRI: 0, ShopeePay: 0, OVO: 0, Flazz: 0 };
@@ -718,7 +687,6 @@
 
             document.getElementById('total-saldo').setAttribute('data-value', totalSaldo);
 
-            // Dompet Cards
             const walletConfig = [
                 { nama: 'BCA', warna: 'bg-[#2962ff]', icon: 'fa-building-columns' },
                 { nama: 'BSI', warna: 'bg-gradient-to-br from-[#10b981] to-[#047857]', icon: 'fa-building-columns' },
@@ -755,14 +723,13 @@
                 `;
             });
 
-            // Anggaran Category List Render
+            // Anggaran Render
             let totalBudget = 0;
             const anggaranContainer = document.getElementById('anggaran-list-container');
             anggaranContainer.innerHTML = '';
 
             kategoriList.forEach(k => {
                 totalBudget += k.limit;
-                // Hitung pengeluaran kategori bulan ini
                 const terpakai = transaksiList
                     .filter(t => t.kategori === k.nama && t.tipe === 'keluar')
                     .reduce((sum, t) => sum + Math.abs(t.nominal), 0);
@@ -772,14 +739,14 @@
                 anggaranContainer.innerHTML += `
                     <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-100 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                                <i class="fa-solid ${k.icon || 'fa-tag'}"></i>
+                            <div class="w-9 h-9 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                                <i class="fa-solid ${k.icon || 'fa-tag'} text-xs"></i>
                             </div>
                             <div>
                                 <h4 class="text-xs font-bold text-gray-800">${k.nama}</h4>
-                                <p class="text-[11px] text-gray-400 font-medium">
+                                <p class="text-[10px] text-gray-400 font-medium">
                                     <span class="format-money" data-value="${terpakai}">${formatRupiah(terpakai)}</span> / 
-                                    <span class="format-money" data-value="${k.limit}">${k.limit > 0 ? formatRupiah(k.limit) : 'Tanpa Limit'}</span>
+                                    <span class="format-money" data-value="${k.limit}">${k.limit > 0 ? formatRupiah(k.limit) : 'Flex'}</span>
                                 </p>
                             </div>
                         </div>
@@ -790,21 +757,21 @@
 
             document.getElementById('anggaran-total-budget').setAttribute('data-value', totalBudget);
 
-            // Target List Render
+            // Target Render
             const targetContainer = document.getElementById('target-list-container');
             targetContainer.innerHTML = '';
             targetList.forEach(item => {
                 const persentase = Math.min((item.terkumpul / item.target) * 100, 100);
                 targetContainer.innerHTML += `
-                    <div class="bg-white rounded-[1.25rem] p-5 shadow-sm border border-gray-50">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-bold text-gray-800 text-sm">${item.nama}</span>
-                            <span class="text-xs font-bold text-gray-500">
+                    <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-50">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-gray-800 text-xs">${item.nama}</span>
+                            <span class="text-[11px] font-bold text-gray-500">
                                 <span class="format-money" data-value="${item.terkumpul}">${formatSingkat(item.terkumpul)}</span> / 
                                 <span class="format-money" data-value="${item.target}">${formatSingkat(item.target)}</span>
                             </span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div class="bg-blue-600 h-full rounded-full" style="width: ${persentase}%"></div>
                         </div>
                     </div>
@@ -815,7 +782,6 @@
             applySensor();
         };
 
-        // Form Submit Transaksi
         document.getElementById('form-kas').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -858,7 +824,6 @@
             }
         });
 
-        // Form Kategori Baru Submit
         document.getElementById('form-kategori').addEventListener('submit', (e) => {
             e.preventDefault();
             const nama = document.getElementById('input-kat-nama').value;
@@ -876,7 +841,6 @@
             updateUI();
         });
 
-        // Firebase Listeners
         onSnapshot(query(collection(db, "kas"), orderBy("timestamp", "desc")), (snapshot) => {
             transaksiList = [];
             snapshot.forEach(doc => { transaksiList.push({ id: doc.id, ...doc.data() }); });
