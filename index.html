@@ -373,7 +373,13 @@
             { id: '4', nama: 'Pengembangan Diri', limit: 300000, icon: 'fa-graduation-cap' },
             { id: '5', nama: 'Masa Depan', limit: 0, icon: 'fa-piggy-bank' }
         ];
-
+        let kategoriMasukList = [
+            { id: 'm1', nama: 'Gaji' },
+            { id: 'm2', nama: 'Sampingan' },
+            { id: 'm3', nama: 'Bonus' },
+            { id: 'm4', nama: 'Jualan' },
+            { id: 'm5', nama: 'Lainnya' }
+        ];
         let isSensorActive = false;
         let chartKomposisiInstance = null;
         let chartTrenInstance = null;
@@ -430,6 +436,7 @@
                     inputNama.readOnly = false;
                     inputNama.placeholder = val === 'masuk' ? 'Contoh: Gaji Bulanan' : 'Contoh: Makan Siang / Kopi';
                 }
+                renderCategoryDropdown();
             });
         });
 
@@ -549,12 +556,23 @@
         const toggleModalSetting = setupModal('modal-setting', 'modal-setting-content', 'btn-setting', '#btn-tutup-setting');
         const toggleModalNotif = setupModal('modal-notif', 'modal-notif-content', 'btn-notif', '#btn-tutup-notif');
 
+        // GANTI FUNGSI renderCategoryDropdown LAMA DENGAN INI:
         const renderCategoryDropdown = () => {
             const select = document.getElementById('input-kategori-anggaran');
+            if (!select) return;
+            
+            const tipe = document.querySelector('input[name="tipe"]:checked')?.value || 'keluar';
             select.innerHTML = '';
-            kategoriList.forEach(k => {
-                select.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
-            });
+
+            if (tipe === 'masuk') {
+                kategoriMasukList.forEach(k => {
+                    select.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
+                });
+            } else {
+                kategoriList.forEach(k => {
+                    select.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
+                });
+            }
         };
 
         const renderCharts = () => {
@@ -824,22 +842,31 @@
             }
         });
 
+        
         document.getElementById('form-kategori').addEventListener('submit', (e) => {
             e.preventDefault();
             const nama = document.getElementById('input-kat-nama').value;
-            const limit = parseInt(document.getElementById('input-kat-limit').value);
-            
+            const limit = parseInt(document.getElementById('input-kat-limit').value) || 0;
+            const tipeActive = document.querySelector('input[name="tipe"]:checked')?.value || 'keluar';
+    
+        if (tipeActive === 'masuk') {
+            kategoriMasukList.push({
+                id: Date.now().toString(),
+                nama: nama
+        });
+        } else {
             kategoriList.push({
                 id: Date.now().toString(),
                 nama: nama,
                 limit: limit,
                 icon: 'fa-tag'
             });
+    }
 
-            document.getElementById('form-kategori').reset();
-            toggleModalKat();
-            updateUI();
-        });
+        document.getElementById('form-kategori').reset();
+        toggleModalKat();
+        updateUI();
+            });
 
         onSnapshot(query(collection(db, "kas"), orderBy("timestamp", "desc")), (snapshot) => {
             transaksiList = [];
