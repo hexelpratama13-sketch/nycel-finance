@@ -363,6 +363,11 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        // Minta izin notifikasi HP saat pertama kali buka
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
 
         let transaksiList = [];
         let targetList = [];
@@ -868,10 +873,25 @@
         updateUI();
             });
 
+        // ================= FIREBASE LISTENERS (REVISI NOTIFIKASI) =================
+        let isFirstLoad = true;
+        let previousCount = 0;
+
         onSnapshot(query(collection(db, "kas"), orderBy("timestamp", "desc")), (snapshot) => {
-            transaksiList = [];
-            snapshot.forEach(doc => { transaksiList.push({ id: doc.id, ...doc.data() }); });
+            const newTransaksis = [];
+            snapshot.forEach(doc => { newTransaksis.push({ id: doc.id, ...doc.data() }); });
+            
+            // Nyalakan titik merah jika ada transaksi baru yang masuk setelah pembacaan awal
+            if (!isFirstLoad && newTransaksis.length > previousCount) {
+                const notifBadge = document.getElementById('notif-badge');
+                if (notifBadge) notifBadge.classList.remove('hidden');
+            }
+            
+            transaksiList = newTransaksis;
+            previousCount = newTransaksis.length;
             updateUI();
+            isFirstLoad = false;
+
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
         });
