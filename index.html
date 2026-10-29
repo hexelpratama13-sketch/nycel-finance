@@ -21,6 +21,53 @@
         .view-section { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
+        #dompet-detail-container { display: grid; padding-top: 48px; touch-action: pan-y; }
+        #dompet-detail-container > div {
+            grid-area: 1 / 1;
+            transform: translateY(calc(var(--depth) * -24px)) scale(calc(1 - var(--depth) * .045));
+            z-index: calc(3 - var(--depth));
+            opacity: 1;
+            transition: transform .35s ease, opacity .35s ease;
+            user-select: none;
+        }
+        #dompet-detail-container > div[data-hidden="true"] { opacity: 0; pointer-events: none; }
+        #dompet-detail-container > div:not([data-active="true"]) { pointer-events: none; }
+        #dompet-detail-container > div[data-active="true"] { transform: translateX(var(--drag, 0px)); }
+        #dompet-detail-container[data-dragging="true"] > div[data-active="true"] { transition: none; }
+        .wallet-atm {
+            position: relative; overflow: hidden; min-width: 0; min-height: 210px;
+            padding: 22px 24px; border-radius: 24px; color: #fff; cursor: pointer;
+            background: linear-gradient(125deg, var(--card-light), var(--card-dark));
+            border: 1px solid rgba(255,255,255,.2);
+            box-shadow: 0 16px 28px -14px var(--card-dark), inset 0 1px 0 rgba(255,255,255,.2);
+            display: flex; flex-direction: column; justify-content: space-between; gap: 18px;
+        }
+        .wallet-atm::before, .wallet-atm::after {
+            content: ''; position: absolute; width: 280px; height: 280px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.12); pointer-events: none;
+        }
+        .wallet-atm::before { right: -100px; top: -170px; background: rgba(255,255,255,.06); }
+        .wallet-atm::after { right: -170px; bottom: -165px; background: rgba(255,255,255,.05); }
+        .wallet-atm > * { position: relative; z-index: 1; }
+        .wallet-atm:focus-visible { outline: 3px solid #60a5fa; outline-offset: 4px; }
+        .wallet-atm-header, .wallet-atm-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .wallet-atm h4 { font-size: 19px; font-weight: 800; letter-spacing: .04em; }
+        .wallet-bank-logo { display: block; width: 88px; height: 34px; object-fit: contain; object-position: left center; background: transparent; mix-blend-mode: normal; filter: none; }
+        .wallet-bank-logo-home { width: 42px; height: 32px; object-fit: contain; object-position: left center; background: transparent; mix-blend-mode: normal; filter: none; }
+        .wallet-atm-kind { font-size: 9px; font-weight: 600; letter-spacing: .16em; opacity: .8; text-transform: uppercase; }
+        .wallet-atm-chip {
+            width: 40px; height: 30px; border-radius: 7px; border: 1px solid #c29b50;
+            background: linear-gradient(90deg, transparent 30%, #b38b46 31%, transparent 33%, transparent 67%, #b38b46 68%, transparent 70%), linear-gradient(0deg, transparent 32%, #b38b46 33%, transparent 36%, transparent 64%, #b38b46 65%, transparent 68%), linear-gradient(135deg, #f6e4b1, #cfa75e);
+            box-shadow: inset 0 1px 2px rgba(255,255,255,.6);
+        }
+        .wallet-atm-label { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; opacity: .75; margin-bottom: 4px; }
+        .wallet-atm-balance { font-size: clamp(20px, 6vw, 28px); font-weight: 700; letter-spacing: -.03em; overflow-wrap: anywhere; }
+        #dompet-pagination button { width: 8px; height: 8px; border-radius: 999px; background: #d1d5db; transition: width .35s ease, background .35s ease; }
+        #dompet-pagination button[aria-current="true"] { width: 24px; background: #2563eb; }
+        @media (prefers-reduced-motion: reduce) {
+            #dompet-detail-container > div, #dompet-pagination button { transition: none; }
+        }
+
         input:checked + .radio-label-keluar { background-color: #ef4444; color: white; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3); }
         input:checked + .radio-label-masuk { background-color: #10b981; color: white; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); }
         input:checked + .radio-label-transfer { background-color: #3b82f6; color: white; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); }
@@ -96,7 +143,9 @@
                 <h3 class="text-[15px] font-bold text-gray-800">Rincian Saldo Dompet</h3>
                 <span class="text-xs text-blue-600 font-semibold">Klik dompet untuk edit</span>
             </div>
-            <div class="grid grid-cols-2 gap-4" id="dompet-detail-container"></div>
+            <div id="dompet-detail-container" role="region" aria-label="Kartu dompet" tabindex="0"></div>
+            <div id="dompet-pagination" class="flex justify-center items-center gap-2 mt-4" aria-label="Pilih kartu dompet"></div>
+            <p class="text-center text-xs text-gray-500 mt-2">Geser kartu untuk berganti akun</p>
         </div>
 
         <!-- ================= VIEW 3: ANALISIS ================= -->
@@ -635,6 +684,85 @@
             inputFileOcr.value = '';
         });
 
+        const walletStack = document.getElementById('dompet-detail-container');
+        const walletPagination = document.getElementById('dompet-pagination');
+        let activeWallet = 0;
+        let walletGesture = null;
+        let suppressWalletClick = false;
+
+        function updateWalletStack() {
+            const cards = [...walletStack.children];
+            activeWallet = cards.length ? (activeWallet + cards.length) % cards.length : 0;
+            cards.forEach((card, index) => {
+                const depth = (index - activeWallet + cards.length) % cards.length;
+                card.style.setProperty('--depth', Math.min(depth, 2));
+                card.dataset.active = String(depth === 0);
+                card.dataset.hidden = String(depth > 2);
+                card.setAttribute('aria-hidden', String(depth !== 0));
+                card.tabIndex = depth === 0 ? 0 : -1;
+                card.setAttribute('role', 'button');
+            });
+            walletPagination.replaceChildren(...cards.map((card, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.setAttribute('aria-label', card.querySelector('img').alt.replace('Logo ', ''));
+                button.setAttribute('aria-current', String(index === activeWallet));
+                button.onclick = () => { activeWallet = index; updateWalletStack(); };
+                return button;
+            }));
+        }
+
+        walletStack.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0) return;
+            suppressWalletClick = false;
+            walletGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, dragging: false };
+        });
+        walletStack.addEventListener('pointermove', event => {
+            if (!walletGesture || walletGesture.id !== event.pointerId) return;
+            const dx = event.clientX - walletGesture.x;
+            const dy = event.clientY - walletGesture.y;
+            if (!walletGesture.dragging) {
+                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) { walletGesture = null; return; }
+                if (Math.abs(dx) < 8) return;
+                walletGesture.dragging = true;
+                walletStack.setPointerCapture(event.pointerId);
+                walletStack.dataset.dragging = 'true';
+            }
+            walletGesture.dx = dx;
+            walletStack.style.setProperty('--drag', `${dx}px`);
+        });
+        function finishWalletGesture(event) {
+            if (!walletGesture || walletGesture.id !== event.pointerId) return;
+            suppressWalletClick = walletGesture.dragging;
+            if (event.type === 'pointerup' && Math.abs(walletGesture.dx) > 50) {
+                activeWallet += walletGesture.dx < 0 ? 1 : -1;
+            }
+            walletGesture = null;
+            walletStack.dataset.dragging = 'false';
+            walletStack.style.removeProperty('--drag');
+            updateWalletStack();
+        }
+        window.addEventListener('pointerup', finishWalletGesture);
+        walletStack.addEventListener('pointercancel', finishWalletGesture);
+        walletStack.addEventListener('click', event => {
+            if (suppressWalletClick) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                suppressWalletClick = false;
+            }
+        }, true);
+        walletStack.addEventListener('keydown', event => {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                event.preventDefault();
+                activeWallet += event.key === 'ArrowRight' ? 1 : -1;
+                updateWalletStack();
+                walletStack.focus();
+            } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                walletStack.children[activeWallet]?.click();
+            }
+        });
+
         // SPA Navigation
         const views = ['home', 'dompet', 'analisis', 'rencana'];
         const viewTitles = {
@@ -925,6 +1053,19 @@
                 { nama: 'Flazz', warna: 'bg-[#0ea5e9]', icon: 'fa-credit-card' }
             ];
 
+            const walletCardColors = {
+                BCA: ['#1674d4', '#073778'],
+                BSI: ['#00a99d', '#00665f'],
+                BNI: ['#007f89', '#004652'],
+                BRI: ['#1264ae', '#002b5c'],
+                ShopeePay: ['#f66a35', '#c63719'],
+                OVO: ['#7653b6', '#39206a'],
+                Flazz: ['#219cdb', '#07539a']
+            };
+            const walletLogos = {
+                BCA: 'BCA.png', BNI: 'BNI.png', BRI: 'BRI.png',
+                ShopeePay: 'Shopee.png', OVO: 'ovo.png', Flazz: 'Flazz.png', BSI: 'BSI.png'
+            };
             const homeWallet = document.getElementById('home-wallet-container');
             const detailWallet = document.getElementById('dompet-detail-container');
             if (homeWallet) homeWallet.innerHTML = '';
@@ -934,9 +1075,10 @@
                 const currentBal = dompetSaldoMap[w.nama] || 0;
                 if (homeWallet) {
                     homeWallet.innerHTML += `
-                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] ${w.warna} text-white p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition">
-                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mb-2.5 backdrop-blur-sm">
-                                <i class="fa-solid ${w.icon} text-sm"></i>
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition text-white" style="background: linear-gradient(135deg, ${walletCardColors[w.nama][0]}, ${walletCardColors[w.nama][1]})">
+                            <div class="flex items-center justify-between mb-2.5">
+                                <img src="${walletLogos[w.nama]}" alt="Logo ${w.nama}" class="wallet-bank-logo-home">
+                                <i class="fa-solid fa-wifi rotate-90 text-sm opacity-70" aria-hidden="true"></i>
                             </div>
                             <p class="text-[11px] font-semibold opacity-90">${w.nama}</p>
                             <p class="text-[13px] font-bold mt-0.5 tracking-wide format-money" data-value="${currentBal}">${formatSingkat(currentBal)}</p>
@@ -945,16 +1087,28 @@
                 }
                 if (detailWallet) {
                     detailWallet.innerHTML += `
-                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="bg-white p-5 rounded-[1.25rem] shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-blue-300 transition">
-                            <div class="w-12 h-12 ${w.warna} text-white rounded-full flex items-center justify-center mb-3 shadow-sm">
-                                <i class="fa-solid ${w.icon} text-lg"></i>
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="wallet-atm" style="--card-light: ${walletCardColors[w.nama][0]}; --card-dark: ${walletCardColors[w.nama][1]}">
+                            <div class="wallet-atm-header">
+                                <img src="${walletLogos[w.nama]}" alt="Logo ${w.nama}" class="wallet-bank-logo">
+                                <i class="fa-solid fa-wifi rotate-90 text-lg opacity-70" aria-hidden="true"></i>
                             </div>
-                            <h4 class="text-xs font-bold text-gray-500">${w.nama}</h4>
-                            <p class="text-sm font-extrabold text-gray-900 mt-1 format-money" data-value="${currentBal}">${formatRupiah(currentBal)}</p>
+                            <div class="flex items-center gap-3" aria-hidden="true">
+                                <span class="wallet-atm-chip"></span>
+                                <i class="fa-solid fa-wifi rotate-90 text-lg opacity-70"></i>
+                            </div>
+                            <div class="wallet-atm-footer">
+                                <div class="min-w-0">
+                                    <p class="wallet-atm-label">Saldo tersedia</p>
+                                    <p class="wallet-atm-balance format-money" data-value="${currentBal}">${formatRupiah(currentBal)}</p>
+                                </div>
+                                <i class="fa-solid ${w.icon} text-2xl opacity-50" aria-hidden="true"></i>
+                            </div>
                         </div>
                     `;
                 }
             });
+
+            updateWalletStack();
 
             // Anggaran Render
             let totalBudget = 0;
