@@ -82,12 +82,12 @@
             </div>
 
             <div class="px-5 mt-4">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-[15px] font-bold text-gray-800">Aktivitas Terkini</h3>
-                <button id="btn-lihat-semua" class="text-xs font-bold text-blue-600 hover:underline">Lihat Semua &rarr;</button>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-[15px] font-bold text-gray-800">Aktivitas Terkini</h3>
+                    <button id="btn-lihat-semua" class="text-xs font-bold text-blue-600 hover:underline">Lihat Semua &rarr;</button>
+                </div>
+                <div class="bg-white rounded-[1.25rem] p-5 shadow-sm space-y-4" id="home-ledger-list"></div>
             </div>
-            <div class="bg-white rounded-[1.25rem] p-5 shadow-sm space-y-4" id="home-ledger-list"></div>
-        </div>
         </div>
 
         <!-- ================= VIEW 2: DOMPET ================= -->
@@ -156,7 +156,10 @@
 
             <div class="space-y-3">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-[14px] font-bold text-gray-800">Amplop Target (Sinking Funds)</h3>
+                    <div>
+                        <h3 class="text-[14px] font-bold text-gray-800">Amplop Target (Sinking Funds)</h3>
+                        <p class="text-[10px] text-gray-400">Klik kartu untuk edit / top-up</p>
+                    </div>
                     <button id="btn-tambah-target" class="text-xs bg-blue-50 text-blue-600 font-bold px-3 py-1.5 rounded-full border border-blue-100"><i class="fa-solid fa-plus mr-1"></i> Target</button>
                 </div>
                 <div class="space-y-3" id="target-list-container"></div>
@@ -216,7 +219,7 @@
 
                     <div id="wrapper-ocr" class="mb-4">
                         <button type="button" id="btn-scan" class="w-full bg-indigo-50 text-indigo-600 font-bold py-3 rounded-xl border border-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-100 transition shadow-sm text-sm">
-                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR Kurang Pintar)
+                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR nya Kurang Pinter)
                         </button>
                         <input type="file" id="input-file-ocr" accept="image/*" capture="environment" class="hidden">
                         <div id="ocr-status" class="text-xs text-center font-medium mt-2 hidden text-indigo-500"></div>
@@ -301,6 +304,56 @@
             </div>
         </div>
 
+        <!-- MODAL RIWAYAT SEMUA MUTASI (PLUS JUMP BY DATE) -->
+        <div id="modal-mutasi-semua" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
+            <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl h-[85vh] flex flex-col" id="modal-mutasi-content">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                    <h3 class="text-base font-bold text-gray-800"><i class="fa-solid fa-list-ul text-blue-600 mr-2"></i> Semua Riwayat Mutasi</h3>
+                    <button id="btn-tutup-mutasi" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <!-- FILTER JUMP BY DATE -->
+                <div class="flex items-center gap-2 mb-4 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <i class="fa-regular fa-calendar text-gray-400 text-sm ml-1"></i>
+                    <input type="date" id="filter-mutasi-tanggal" class="bg-transparent text-xs font-bold text-gray-700 focus:outline-none flex-1">
+                    <button id="btn-reset-filter-tanggal" class="text-[11px] bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold px-2.5 py-1 rounded-lg transition hidden">Reset</button>
+                </div>
+
+                <div class="overflow-y-auto space-y-4 flex-1 no-scrollbar pr-1" id="full-ledger-list"></div>
+            </div>
+        </div>
+
+        <!-- MODAL EDIT / TOPUP TARGET (KOMBINASI) -->
+        <div id="modal-edit-target" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
+            <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl" id="modal-edit-target-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-bold text-gray-800" id="edit-target-title">Kelola Target</h3>
+                    <button class="btn-tutup-edit-target text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <form id="form-edit-target" class="space-y-3">
+                    <input type="hidden" id="edit-target-id">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Nama Target</label>
+                        <input type="text" id="edit-target-nama" required class="w-full border-2 border-gray-100 p-3 rounded-xl font-medium text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Sudah Terkumpul (Rp)</label>
+                            <input type="number" id="edit-target-terkumpul" required class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Target Total (Rp)</label>
+                            <input type="number" id="edit-target-nominal" required class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" id="btn-hapus-target" class="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-100 hover:bg-red-100 transition text-xs">Hapus Target</button>
+                        <button type="submit" class="flex-[2] bg-[#0f2847] text-white font-bold py-3 rounded-xl hover:bg-[#164b59] transition text-xs shadow-md">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- MODAL TAMBAH KATEGORI ANGGARAN -->
         <div id="modal-kategori-baru" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
             <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full" id="modal-kategori-content">
@@ -353,26 +406,6 @@
             </div>
         </div>
 
-        <!-- MODAL RIWAYAT SEMUA MUTASI -->
-        <div id="modal-mutasi-semua" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
-            <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl h-[85vh] flex flex-col" id="modal-mutasi-content">
-                <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-                    <h3 class="text-base font-bold text-gray-800"><i class="fa-solid fa-list-ul text-blue-600 mr-2"></i> Semua Riwayat Mutasi</h3>
-                    <button id="btn-tutup-mutasi" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-
-        <!-- FILTER JUMP BY DATE -->
-        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-            <i class="fa-regular fa-calendar text-gray-400 text-sm ml-1"></i>
-            <input type="date" id="filter-mutasi-tanggal" class="bg-transparent text-xs font-bold text-gray-700 focus:outline-none flex-1">
-            <button id="btn-reset-filter-tanggal" class="text-[11px] bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold px-2.5 py-1 rounded-lg transition hidden">Reset</button>
-        </div>
-
-        <!-- List Mutasi Lengkap -->
-                <div class="overflow-y-auto space-y-4 flex-1 no-scrollbar pr-1" id="full-ledger-list"></div>
-            </div>
-        </div>
-
         <!-- MODAL TARGET BARU -->
         <div id="modal-target" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
             <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full" id="modal-target-content">
@@ -396,7 +429,7 @@
     <!-- Script Utama -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDbCJl5fYbf-FZJ2HEuSlqbWi8WpW2Zw0Q",
@@ -625,14 +658,24 @@
         const toggleModalSetting = setupModal('modal-setting', 'modal-setting-content', 'btn-setting', '#btn-tutup-setting');
         const toggleModalNotif = setupModal('modal-notif', 'modal-notif-content', 'btn-notif', '#btn-tutup-notif');
         const toggleModalEditDompet = setupModal('modal-edit-dompet', 'modal-edit-dompet-content', null, '.btn-tutup-edit-dompet');
+        const toggleModalMutasi = setupModal('modal-mutasi-semua', 'modal-mutasi-content', 'btn-lihat-semua', '#btn-tutup-mutasi');
+        const toggleModalEditTarget = setupModal('modal-edit-target', 'modal-edit-target-content', null, '.btn-tutup-edit-target');
 
-        // Buka Modal Edit Dompet
         window.openEditDompetModal = (namaDompet, currentBalance) => {
             document.getElementById('edit-dompet-nama').value = namaDompet;
             document.getElementById('edit-dompet-title').value = namaDompet;
             document.getElementById('edit-dompet-current').value = formatRupiah(currentBalance);
             document.getElementById('edit-dompet-new').value = currentBalance;
             toggleModalEditDompet();
+        };
+
+        window.openEditTargetModal = (id, nama, terkumpul, target) => {
+            document.getElementById('edit-target-id').value = id;
+            document.getElementById('edit-target-nama').value = nama;
+            document.getElementById('edit-target-terkumpul').value = terkumpul;
+            document.getElementById('edit-target-nominal').value = target;
+            document.getElementById('edit-target-title').innerText = `Kelola: ${nama}`;
+            toggleModalEditTarget();
         };
 
         const renderCharts = () => {
@@ -722,7 +765,6 @@
             applySensor();
         };
 
-        // ================= HELPER GROUPING TANGGAL & RENDER MUTASI =================
         const getGroupLabel = (dateStr) => {
             if (!dateStr) return 'LAINNYA';
             const targetDate = new Date(dateStr);
@@ -788,7 +830,6 @@
             }
         };
 
-        // ================= FUNGSI UPDATE UI UTAMA =================
         const updateUI = () => {
             let totalSaldo = 0;
             dompetSaldoMap = { BCA: 0, BSI: 0, BNI: 0, BRI: 0, ShopeePay: 0, OVO: 0, Flazz: 0 };
@@ -829,15 +870,20 @@
 
             document.getElementById('total-saldo').setAttribute('data-value', totalSaldo);
 
-            // 1. RENDER BUKU KAS BERANDA (Maksimal 5 transaksi saja)
+            // Render Beranda & Full Mutasi
             const homeLedgerContainer = document.getElementById('home-ledger-list');
             renderGroupedLedger(homeLedgerContainer, transaksiList.slice(0, 5));
 
-            // 2. RENDER MODAL SEMUA MUTASI (Seluruh transaksi)
             const fullLedgerContainer = document.getElementById('full-ledger-list');
-            renderGroupedLedger(fullLedgerContainer, transaksiList);
+            const inputFilterTanggal = document.getElementById('filter-mutasi-tanggal');
+            if (inputFilterTanggal && inputFilterTanggal.value) {
+                const filtered = transaksiList.filter(item => item.tanggal === inputFilterTanggal.value);
+                renderGroupedLedger(fullLedgerContainer, filtered);
+            } else {
+                renderGroupedLedger(fullLedgerContainer, transaksiList);
+            }
 
-            // Dompet Cards Config
+            // Dompet Cards
             const walletConfig = [
                 { nama: 'BCA', warna: 'bg-[#2962ff]', icon: 'fa-building-columns' },
                 { nama: 'BSI', warna: 'bg-gradient-to-br from-[#10b981] to-[#047857]', icon: 'fa-building-columns' },
@@ -916,14 +962,14 @@
             const totalBudgetEl = document.getElementById('anggaran-total-budget');
             if (totalBudgetEl) totalBudgetEl.setAttribute('data-value', totalBudget);
 
-            // Target Render
+            // Target Render (Kombinasi)
             const targetContainer = document.getElementById('target-list-container');
             if (targetContainer) targetContainer.innerHTML = '';
             targetList.forEach(item => {
                 const persentase = Math.min((item.terkumpul / item.target) * 100, 100);
                 if (targetContainer) {
                     targetContainer.innerHTML += `
-                        <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-50">
+                        <div onclick="openEditTargetModal('${item.id}', '${item.nama}', ${item.terkumpul}, ${item.target})" class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-50 cursor-pointer hover:border-blue-300 transition">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="font-bold text-gray-800 text-xs">${item.nama}</span>
                                 <span class="text-[11px] font-bold text-gray-500">
@@ -932,7 +978,7 @@
                                 </span>
                             </div>
                             <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                <div class="bg-blue-600 h-full rounded-full" style="width: ${persentase}%"></div>
+                                <div class="bg-blue-600 h-full rounded-full transition-all duration-500" style="width: ${persentase}%"></div>
                             </div>
                         </div>
                     `;
@@ -943,26 +989,21 @@
             applySensor();
         };
 
-        // SETUP MODAL MUTASI LENGKAP
-        const toggleModalMutasi = setupModal('modal-mutasi-semua', 'modal-mutasi-content', 'btn-lihat-semua', '#btn-tutup-mutasi');
-
-        // ================= LOGIKA FILTER JUMP BY DATE =================
+        // FILTER TANGGAL JUMP BY DATE
         const inputFilterTanggal = document.getElementById('filter-mutasi-tanggal');
         const btnResetFilter = document.getElementById('btn-reset-filter-tanggal');
 
         if (inputFilterTanggal) {
             inputFilterTanggal.addEventListener('change', (e) => {
                 const selectedDate = e.target.value;
+                const fullLedgerContainer = document.getElementById('full-ledger-list');
                 if (!selectedDate) {
-                    renderGroupedLedger(document.getElementById('full-ledger-list'), transaksiList);
+                    renderGroupedLedger(fullLedgerContainer, transaksiList);
                     if (btnResetFilter) btnResetFilter.classList.add('hidden');
                     return;
                 }
-
-                // Filter transaksi berdasarkan tanggal yang dipilih
                 const filteredList = transaksiList.filter(item => item.tanggal === selectedDate);
-                renderGroupedLedger(document.getElementById('full-ledger-list'), filteredList);
-                
+                renderGroupedLedger(fullLedgerContainer, filteredList);
                 if (btnResetFilter) btnResetFilter.classList.remove('hidden');
             });
         }
@@ -970,12 +1011,13 @@
         if (btnResetFilter) {
             btnResetFilter.addEventListener('click', () => {
                 if (inputFilterTanggal) inputFilterTanggal.value = '';
-                renderGroupedLedger(document.getElementById('full-ledger-list'), transaksiList);
+                const fullLedgerContainer = document.getElementById('full-ledger-list');
+                renderGroupedLedger(fullLedgerContainer, transaksiList);
                 btnResetFilter.classList.add('hidden');
             });
         }
 
-        // Form Submit Transaksi Manual
+        // FORM SUBMITS
         document.getElementById('form-kas').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -1018,7 +1060,6 @@
             }
         });
 
-        // Form Submit Adjustment Saldo Dompet
         document.getElementById('form-edit-dompet').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -1057,7 +1098,57 @@
             }
         });
 
-        // Form Submit Kategori Baru
+        document.getElementById('form-edit-target').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-target-id').value;
+            const nama = document.getElementById('edit-target-nama').value;
+            const terkumpul = parseInt(document.getElementById('edit-target-terkumpul').value) || 0;
+            const target = parseInt(document.getElementById('edit-target-nominal').value) || 0;
+
+            try {
+                await updateDoc(doc(db, "target", id), {
+                    nama: nama,
+                    terkumpul: terkumpul,
+                    target: target
+                });
+                toggleModalEditTarget();
+            } catch (err) {
+                alert("Gagal memperbarui target.");
+            }
+        });
+
+        document.getElementById('btn-hapus-target').addEventListener('click', async () => {
+            if (!confirm("Yakin ingin menghapus target ini?")) return;
+            const id = document.getElementById('edit-target-id').value;
+
+            try {
+                await deleteDoc(doc(db, "target", id));
+                toggleModalEditTarget();
+            } catch (err) {
+                alert("Gagal menghapus target.");
+            }
+        });
+
+        document.getElementById('form-target').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Membuat...';
+            try {
+                await addDoc(collection(db, "target"), {
+                    nama: document.getElementById('input-target-nama').value,
+                    target: parseInt(document.getElementById('input-target-nominal').value) || 0,
+                    terkumpul: parseInt(document.getElementById('input-target-terkumpul').value) || 0,
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('form-target').reset();
+                toggleModalTarget();
+            } catch (err) {
+                alert("Gagal membuat target.");
+            } finally {
+                btn.innerHTML = 'Buat Target';
+            }
+        });
+
         document.getElementById('form-kategori').addEventListener('submit', (e) => {
             e.preventDefault();
             const nama = document.getElementById('input-kat-nama').value;
@@ -1075,7 +1166,7 @@
             updateUI();
         });
 
-        // FIREBASE LISTENERS REAL-TIME
+        // REALTIME LISTENERS
         let isFirstLoad = true;
         let previousCount = 0;
 
