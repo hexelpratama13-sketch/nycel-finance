@@ -356,11 +356,19 @@
         <!-- MODAL RIWAYAT SEMUA MUTASI -->
         <div id="modal-mutasi-semua" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
             <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl h-[85vh] flex flex-col" id="modal-mutasi-content">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
                     <h3 class="text-base font-bold text-gray-800"><i class="fa-solid fa-list-ul text-blue-600 mr-2"></i> Semua Riwayat Mutasi</h3>
                     <button id="btn-tutup-mutasi" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
-                <!-- List Mutasi Lengkap -->
+
+        <!-- FILTER JUMP BY DATE -->
+        <div class="flex items-center gap-2 mb-4 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+            <i class="fa-regular fa-calendar text-gray-400 text-sm ml-1"></i>
+            <input type="date" id="filter-mutasi-tanggal" class="bg-transparent text-xs font-bold text-gray-700 focus:outline-none flex-1">
+            <button id="btn-reset-filter-tanggal" class="text-[11px] bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold px-2.5 py-1 rounded-lg transition hidden">Reset</button>
+        </div>
+
+        <!-- List Mutasi Lengkap -->
                 <div class="overflow-y-auto space-y-4 flex-1 no-scrollbar pr-1" id="full-ledger-list"></div>
             </div>
         </div>
@@ -937,6 +945,35 @@
 
         // SETUP MODAL MUTASI LENGKAP
         const toggleModalMutasi = setupModal('modal-mutasi-semua', 'modal-mutasi-content', 'btn-lihat-semua', '#btn-tutup-mutasi');
+
+        // ================= LOGIKA FILTER JUMP BY DATE =================
+        const inputFilterTanggal = document.getElementById('filter-mutasi-tanggal');
+        const btnResetFilter = document.getElementById('btn-reset-filter-tanggal');
+
+        if (inputFilterTanggal) {
+            inputFilterTanggal.addEventListener('change', (e) => {
+                const selectedDate = e.target.value;
+                if (!selectedDate) {
+                    renderGroupedLedger(document.getElementById('full-ledger-list'), transaksiList);
+                    if (btnResetFilter) btnResetFilter.classList.add('hidden');
+                    return;
+                }
+
+                // Filter transaksi berdasarkan tanggal yang dipilih
+                const filteredList = transaksiList.filter(item => item.tanggal === selectedDate);
+                renderGroupedLedger(document.getElementById('full-ledger-list'), filteredList);
+                
+                if (btnResetFilter) btnResetFilter.classList.remove('hidden');
+            });
+        }
+
+        if (btnResetFilter) {
+            btnResetFilter.addEventListener('click', () => {
+                if (inputFilterTanggal) inputFilterTanggal.value = '';
+                renderGroupedLedger(document.getElementById('full-ledger-list'), transaksiList);
+                btnResetFilter.classList.add('hidden');
+            });
+        }
 
         // Form Submit Transaksi Manual
         document.getElementById('form-kas').addEventListener('submit', async (e) => {
