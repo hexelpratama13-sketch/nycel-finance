@@ -82,11 +82,12 @@
             </div>
 
             <div class="px-5 mt-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-[15px] font-bold text-gray-800">Buku Kas (Shared Ledger)</h3>
-                </div>
-                <div class="bg-white rounded-[1.25rem] p-5 shadow-sm space-y-5" id="home-ledger-list"></div>
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-[15px] font-bold text-gray-800">Aktivitas Terkini</h3>
+                <button id="btn-lihat-semua" class="text-xs font-bold text-blue-600 hover:underline">Lihat Semua &rarr;</button>
             </div>
+            <div class="bg-white rounded-[1.25rem] p-5 shadow-sm space-y-4" id="home-ledger-list"></div>
+        </div>
         </div>
 
         <!-- ================= VIEW 2: DOMPET ================= -->
@@ -349,6 +350,18 @@
                 <div class="overflow-y-auto space-y-3 flex-1 no-scrollbar pr-1" id="notif-list-container">
                     <p class="text-center text-xs text-gray-400 py-6">Belum ada aktivitas baru.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- MODAL RIWAYAT SEMUA MUTASI -->
+        <div id="modal-mutasi-semua" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
+            <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl h-[85vh] flex flex-col" id="modal-mutasi-content">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                    <h3 class="text-base font-bold text-gray-800"><i class="fa-solid fa-list-ul text-blue-600 mr-2"></i> Semua Riwayat Mutasi</h3>
+                    <button id="btn-tutup-mutasi" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <!-- List Mutasi Lengkap -->
+                <div class="overflow-y-auto space-y-4 flex-1 no-scrollbar pr-1" id="full-ledger-list"></div>
             </div>
         </div>
 
@@ -701,15 +714,79 @@
             applySensor();
         };
 
+        // ================= HELPER GROUPING TANGGAL & RENDER MUTASI =================
+        const getGroupLabel = (dateStr) => {
+            if (!dateStr) return 'LAINNYA';
+            const targetDate = new Date(dateStr);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            if (targetDate.toDateString() === today.toDateString()) return 'HARI INI';
+            if (targetDate.toDateString() === yesterday.toDateString()) return 'KEMARIN';
+            return targetDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+        };
+
+        const renderTransactionHTML = (item) => {
+            const isMasuk = item.tipe === 'masuk';
+            const isTransfer = item.tipe === 'transfer';
+            let color = isMasuk ? 'text-emerald-500' : (isTransfer ? 'text-blue-500' : 'text-red-500');
+            let bgIcon = isMasuk ? 'bg-emerald-50 text-emerald-500' : (isTransfer ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500');
+            let iconSymbol = isMasuk ? 'fa-arrow-down' : (isTransfer ? 'fa-right-left' : 'fa-arrow-up');
+            let sign = isMasuk ? '+' : '';
+
+            return `
+                <div class="flex justify-between items-center py-1">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 ${bgIcon} rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid ${iconSymbol} text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="text-[13px] font-bold text-gray-800">${item.nama}</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${isTransfer ? item.dompet + ' &rarr; ' + item.dompetTujuan : item.dompet} &bull; ${item.kategori || 'Umum'}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs font-bold ${color} format-money" data-value="${Math.abs(item.nominal)}">${sign}${formatRupiah(Math.abs(item.nominal))}</p>
+                </div>
+            `;
+        };
+
+        const renderGroupedLedger = (containerEl, items) => {
+            if (!containerEl) return;
+            containerEl.innerHTML = '';
+            if (items.length === 0) {
+                containerEl.innerHTML = '<p class="text-center text-sm text-gray-400 font-medium py-4">Belum ada transaksi.</p>';
+                return;
+            }
+
+            const grouped = {};
+            items.forEach(item => {
+                const label = getGroupLabel(item.tanggal);
+                if (!grouped[label]) grouped[label] = [];
+                grouped[label].push(item);
+            });
+
+            for (const [label, transList] of Object.entries(grouped)) {
+                let groupHTML = `
+                    <div class="mb-3 last:mb-0">
+                        <p class="text-[10px] font-bold text-gray-400 tracking-wider mb-2 uppercase border-b border-gray-50 pb-1">${label}</p>
+                        <div class="space-y-3">
+                `;
+                transList.forEach(item => {
+                    groupHTML += renderTransactionHTML(item);
+                });
+                groupHTML += `</div></div>`;
+                containerEl.innerHTML += groupHTML;
+            }
+        };
+
+        // ================= FUNGSI UPDATE UI UTAMA =================
         const updateUI = () => {
             let totalSaldo = 0;
             dompetSaldoMap = { BCA: 0, BSI: 0, BNI: 0, BRI: 0, ShopeePay: 0, OVO: 0, Flazz: 0 };
             
-            const homeLedger = document.getElementById('home-ledger-list');
             const notifContainer = document.getElementById('notif-list-container');
-            
-            homeLedger.innerHTML = '';
-            notifContainer.innerHTML = '';
+            if (notifContainer) notifContainer.innerHTML = '';
 
             transaksiList.forEach(item => {
                 totalSaldo += item.nominal;
@@ -720,43 +797,37 @@
 
                 const isMasuk = item.tipe === 'masuk';
                 const isTransfer = item.tipe === 'transfer';
-                
                 let color = isMasuk ? 'text-emerald-500' : (isTransfer ? 'text-blue-500' : 'text-red-500');
                 let bgIcon = isMasuk ? 'bg-emerald-50 text-emerald-500' : (isTransfer ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500');
                 let iconSymbol = isMasuk ? 'fa-arrow-down' : (isTransfer ? 'fa-right-left' : 'fa-arrow-up');
                 let sign = isMasuk ? '+' : '';
                 const tanggalFormatted = item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-';
 
-                homeLedger.innerHTML += `
-                    <div class="flex justify-between items-center border-b border-gray-50 pb-3 last:border-none last:pb-0">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 ${bgIcon} rounded-full flex items-center justify-center flex-shrink-0">
+                if (notifContainer) {
+                    notifContainer.innerHTML += `
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start gap-3">
+                            <div class="w-8 h-8 ${bgIcon} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <i class="fa-solid ${iconSymbol} text-xs"></i>
                             </div>
-                            <div>
-                                <p class="text-[13px] font-bold text-gray-800">${item.nama}</p>
-                                <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">${isTransfer ? item.dompet + ' &rarr; ' + item.dompetTujuan : item.dompet} &bull; ${item.kategori || 'Umum'} &bull; ${tanggalFormatted}</p>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-gray-800">${item.nama}</p>
+                                <p class="text-[11px] text-gray-500 mt-0.5">${isTransfer ? 'Transfer dari ' + item.dompet + ' ke ' + item.dompetTujuan : item.dompet}: <b class="${color}">${sign}${formatRupiah(Math.abs(item.nominal))}</b></p>
+                                <span class="text-[9px] text-gray-400 mt-1 block">${tanggalFormatted}</span>
                             </div>
                         </div>
-                        <p class="text-xs font-bold ${color} format-money" data-value="${Math.abs(item.nominal)}">${sign}${formatRupiah(Math.abs(item.nominal))}</p>
-                    </div>
-                `;
-
-                notifContainer.innerHTML += `
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start gap-3">
-                        <div class="w-8 h-8 ${bgIcon} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <i class="fa-solid ${iconSymbol} text-xs"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs font-bold text-gray-800">${item.nama}</p>
-                            <p class="text-[11px] text-gray-500 mt-0.5">${isTransfer ? 'Transfer dari ' + item.dompet + ' ke ' + item.dompetTujuan : item.dompet}: <b class="${color}">${sign}${formatRupiah(Math.abs(item.nominal))}</b></p>
-                            <span class="text-[9px] text-gray-400 mt-1 block">${tanggalFormatted}</span>
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
             });
 
             document.getElementById('total-saldo').setAttribute('data-value', totalSaldo);
+
+            // 1. RENDER BUKU KAS BERANDA (Maksimal 5 transaksi saja)
+            const homeLedgerContainer = document.getElementById('home-ledger-list');
+            renderGroupedLedger(homeLedgerContainer, transaksiList.slice(0, 5));
+
+            // 2. RENDER MODAL SEMUA MUTASI (Seluruh transaksi)
+            const fullLedgerContainer = document.getElementById('full-ledger-list');
+            renderGroupedLedger(fullLedgerContainer, transaksiList);
 
             // Dompet Cards Config
             const walletConfig = [
@@ -771,35 +842,39 @@
 
             const homeWallet = document.getElementById('home-wallet-container');
             const detailWallet = document.getElementById('dompet-detail-container');
-            homeWallet.innerHTML = '';
-            detailWallet.innerHTML = '';
+            if (homeWallet) homeWallet.innerHTML = '';
+            if (detailWallet) detailWallet.innerHTML = '';
 
             walletConfig.forEach(w => {
                 const currentBal = dompetSaldoMap[w.nama] || 0;
-                homeWallet.innerHTML += `
-                    <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] ${w.warna} text-white p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition">
-                        <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mb-2.5 backdrop-blur-sm">
-                            <i class="fa-solid ${w.icon} text-sm"></i>
+                if (homeWallet) {
+                    homeWallet.innerHTML += `
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] ${w.warna} text-white p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition">
+                            <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mb-2.5 backdrop-blur-sm">
+                                <i class="fa-solid ${w.icon} text-sm"></i>
+                            </div>
+                            <p class="text-[11px] font-semibold opacity-90">${w.nama}</p>
+                            <p class="text-[13px] font-bold mt-0.5 tracking-wide format-money" data-value="${currentBal}">${formatSingkat(currentBal)}</p>
                         </div>
-                        <p class="text-[11px] font-semibold opacity-90">${w.nama}</p>
-                        <p class="text-[13px] font-bold mt-0.5 tracking-wide format-money" data-value="${currentBal}">${formatSingkat(currentBal)}</p>
-                    </div>
-                `;
-                detailWallet.innerHTML += `
-                    <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="bg-white p-5 rounded-[1.25rem] shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-blue-300 transition">
-                        <div class="w-12 h-12 ${w.warna} text-white rounded-full flex items-center justify-center mb-3 shadow-sm">
-                            <i class="fa-solid ${w.icon} text-lg"></i>
+                    `;
+                }
+                if (detailWallet) {
+                    detailWallet.innerHTML += `
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="bg-white p-5 rounded-[1.25rem] shadow-sm border border-gray-100 flex flex-col items-center text-center cursor-pointer hover:border-blue-300 transition">
+                            <div class="w-12 h-12 ${w.warna} text-white rounded-full flex items-center justify-center mb-3 shadow-sm">
+                                <i class="fa-solid ${w.icon} text-lg"></i>
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-500">${w.nama}</h4>
+                            <p class="text-sm font-extrabold text-gray-900 mt-1 format-money" data-value="${currentBal}">${formatRupiah(currentBal)}</p>
                         </div>
-                        <h4 class="text-xs font-bold text-gray-500">${w.nama}</h4>
-                        <p class="text-sm font-extrabold text-gray-900 mt-1 format-money" data-value="${currentBal}">${formatRupiah(currentBal)}</p>
-                    </div>
-                `;
+                    `;
+                }
             });
 
             // Anggaran Render
             let totalBudget = 0;
             const anggaranContainer = document.getElementById('anggaran-list-container');
-            anggaranContainer.innerHTML = '';
+            if (anggaranContainer) anggaranContainer.innerHTML = '';
 
             kategoriList.forEach(k => {
                 totalBudget += k.limit;
@@ -809,51 +884,59 @@
                 
                 const pct = k.limit > 0 ? Math.min(Math.round((terpakai / k.limit) * 100), 100) : 0;
 
-                anggaranContainer.innerHTML += `
-                    <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-100 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                                <i class="fa-solid ${k.icon || 'fa-tag'} text-xs"></i>
+                if (anggaranContainer) {
+                    anggaranContainer.innerHTML += `
+                        <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-100 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid ${k.icon || 'fa-tag'} text-xs"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-gray-800">${k.nama}</h4>
+                                    <p class="text-[10px] text-gray-400 font-medium">
+                                        <span class="format-money" data-value="${terpakai}">${formatRupiah(terpakai)}</span> / 
+                                        <span class="format-money" data-value="${k.limit}">${k.limit > 0 ? formatRupiah(k.limit) : 'Flex'}</span>
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-gray-800">${k.nama}</h4>
-                                <p class="text-[10px] text-gray-400 font-medium">
-                                    <span class="format-money" data-value="${terpakai}">${formatRupiah(terpakai)}</span> / 
-                                    <span class="format-money" data-value="${k.limit}">${k.limit > 0 ? formatRupiah(k.limit) : 'Flex'}</span>
-                                </p>
-                            </div>
+                            <span class="text-xs font-extrabold ${pct > 90 ? 'text-red-500' : 'text-blue-600'}">${k.limit > 0 ? pct + '%' : 'Flex'}</span>
                         </div>
-                        <span class="text-xs font-extrabold ${pct > 90 ? 'text-red-500' : 'text-blue-600'}">${k.limit > 0 ? pct + '%' : 'Flex'}</span>
-                    </div>
-                `;
+                    `;
+                }
             });
 
-            document.getElementById('anggaran-total-budget').setAttribute('data-value', totalBudget);
+            const totalBudgetEl = document.getElementById('anggaran-total-budget');
+            if (totalBudgetEl) totalBudgetEl.setAttribute('data-value', totalBudget);
 
             // Target Render
             const targetContainer = document.getElementById('target-list-container');
-            targetContainer.innerHTML = '';
+            if (targetContainer) targetContainer.innerHTML = '';
             targetList.forEach(item => {
                 const persentase = Math.min((item.terkumpul / item.target) * 100, 100);
-                targetContainer.innerHTML += `
-                    <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-50">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-bold text-gray-800 text-xs">${item.nama}</span>
-                            <span class="text-[11px] font-bold text-gray-500">
-                                <span class="format-money" data-value="${item.terkumpul}">${formatSingkat(item.terkumpul)}</span> / 
-                                <span class="format-money" data-value="${item.target}">${formatSingkat(item.target)}</span>
-                            </span>
+                if (targetContainer) {
+                    targetContainer.innerHTML += `
+                        <div class="bg-white rounded-[1.25rem] p-4 shadow-sm border border-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-gray-800 text-xs">${item.nama}</span>
+                                <span class="text-[11px] font-bold text-gray-500">
+                                    <span class="format-money" data-value="${item.terkumpul}">${formatSingkat(item.terkumpul)}</span> / 
+                                    <span class="format-money" data-value="${item.target}">${formatSingkat(item.target)}</span>
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                <div class="bg-blue-600 h-full rounded-full" style="width: ${persentase}%"></div>
+                            </div>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div class="bg-blue-600 h-full rounded-full" style="width: ${persentase}%"></div>
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
             });
 
             renderCategoryDropdown();
             applySensor();
         };
+
+        // SETUP MODAL MUTASI LENGKAP
+        const toggleModalMutasi = setupModal('modal-mutasi-semua', 'modal-mutasi-content', 'btn-lihat-semua', '#btn-tutup-mutasi');
 
         // Form Submit Transaksi Manual
         document.getElementById('form-kas').addEventListener('submit', async (e) => {
@@ -954,7 +1037,7 @@
             toggleModalKat();
             updateUI();
         });
-        
+
         // FIREBASE LISTENERS REAL-TIME
         let isFirstLoad = true;
         let previousCount = 0;
