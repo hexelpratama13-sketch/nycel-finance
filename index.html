@@ -238,8 +238,14 @@
                             <option value="Flazz">Flazz</option>
                         </select>
                     </div>
-
                     <div id="wrapper-kategori-anggaran">
+                        <!-- DROPDOWN PILIH AMPLOP TARGET (OPSIONAL) -->
+                    <div id="wrapper-target-anggaran" class="hidden">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Alokasikan ke Amplop Target (Opsional)</label>
+                        <select id="input-target-alokasi" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none">
+                            <option value="" selected>Tidak terikat ke amplop target</option>
+                        </select>
+                    </div>
                         <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Kategori Anggaran</label>
                         <select id="input-kategori-anggaran" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none"></select>
                     </div>
@@ -510,6 +516,25 @@
                 kategoriList.forEach(k => {
                     select.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
                 });
+            }
+        };
+
+        const renderTargetDropdown = () => {
+            const select = document.getElementById('input-target-alokasi');
+            const wrapper = document.getElementById('wrapper-target-anggaran');
+            if (!select || !wrapper) return;
+
+            const tipe = document.querySelector('input[name="tipe"]:checked')?.value || 'keluar';
+
+            // Tampilkan opsi target hanya pada transaksi keluar atau transfer
+            if (tipe === 'keluar' || tipe === 'transfer') {
+                wrapper.classList.remove('hidden');
+                select.innerHTML = '<option value="" selected>Tidak terikat ke amplop target</option>';
+                targetList.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">${t.nama}</option>`;
+                });
+            } else {
+                wrapper.classList.add('hidden');
             }
         };
 
@@ -1097,6 +1122,25 @@
                 btn.innerHTML = 'Simpan Perubahan Saldo';
             }
         });
+
+            // Tambahkan logika ini di dalam submit form-kas SEBELUM atau SESUDAH addDoc("kas"):
+            const targetId = document.getElementById('input-target-alokasi')?.value;
+
+            if (targetId) {
+                const targetItem = targetList.find(t => t.id === targetId);
+                if (targetItem) {
+                    // Jika transaksi KELUAR -> Tambah dana terkumpul di amplop target
+                    // Jika transaksi MASUK -> Kurangi dana dari amplop target
+                    const nominalAbs = Math.abs(nominal);
+                    const newTerkumpul = tipe === 'keluar' 
+                        ? targetItem.terkumpul + nominalAbs 
+                        : Math.max(0, targetItem.terkumpul - nominalAbs);
+
+                    await updateDoc(doc(db, "target", targetId), {
+                        terkumpul: newTerkumpul
+                    });
+                }
+            }
 
         document.getElementById('form-edit-target').addEventListener('submit', async (e) => {
             e.preventDefault();
