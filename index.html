@@ -219,7 +219,7 @@
 
                     <div id="wrapper-ocr" class="mb-4">
                         <button type="button" id="btn-scan" class="w-full bg-indigo-50 text-indigo-600 font-bold py-3 rounded-xl border border-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-100 transition shadow-sm text-sm">
-                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR nya Kurang Pinter)
+                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR nya Kurang Pintar)
                         </button>
                         <input type="file" id="input-file-ocr" accept="image/*" capture="environment" class="hidden">
                         <div id="ocr-status" class="text-xs text-center font-medium mt-2 hidden text-indigo-500"></div>
@@ -238,16 +238,18 @@
                             <option value="Flazz">Flazz</option>
                         </select>
                     </div>
+
                     <div id="wrapper-kategori-anggaran">
-                        <!-- DROPDOWN PILIH AMPLOP TARGET (OPSIONAL) -->
-                    <div id="wrapper-target-anggaran" class="hidden">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Kategori Anggaran</label>
+                        <select id="input-kategori-anggaran" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none"></select>
+                    </div>
+
+                    <!-- DROPDOWN PILIH AMPLOP TARGET -->
+                    <div id="wrapper-target-anggaran">
                         <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Alokasikan ke Amplop Target (Opsional)</label>
                         <select id="input-target-alokasi" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none">
                             <option value="" selected>Tidak terikat ke amplop target</option>
                         </select>
-                    </div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Kategori Anggaran</label>
-                        <select id="input-kategori-anggaran" class="w-full bg-white border-2 border-gray-100 p-3 rounded-xl focus:outline-none focus:border-blue-500 transition-colors font-medium text-sm appearance-none"></select>
                     </div>
 
                     <div id="wrapper-dompet-tujuan" class="hidden">
@@ -329,7 +331,7 @@
             </div>
         </div>
 
-        <!-- MODAL EDIT / TOPUP TARGET (KOMBINASI) -->
+        <!-- MODAL EDIT / TOPUP TARGET -->
         <div id="modal-edit-target" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex flex-col justify-end">
             <div class="bg-white w-full max-w-md mx-auto rounded-t-[2rem] p-6 transform transition-transform duration-300 translate-y-full shadow-2xl" id="modal-edit-target-content">
                 <div class="flex justify-between items-center mb-4">
@@ -526,7 +528,6 @@
 
             const tipe = document.querySelector('input[name="tipe"]:checked')?.value || 'keluar';
 
-            // Tampilkan opsi target hanya pada transaksi keluar atau transfer
             if (tipe === 'keluar' || tipe === 'transfer') {
                 wrapper.classList.remove('hidden');
                 select.innerHTML = '<option value="" selected>Tidak terikat ke amplop target</option>';
@@ -564,6 +565,7 @@
                     inputNama.placeholder = val === 'masuk' ? 'Contoh: Gaji Bulanan' : 'Contoh: Makan Siang / Kopi';
                 }
                 renderCategoryDropdown();
+                renderTargetDropdown();
             });
         });
 
@@ -987,7 +989,7 @@
             const totalBudgetEl = document.getElementById('anggaran-total-budget');
             if (totalBudgetEl) totalBudgetEl.setAttribute('data-value', totalBudget);
 
-            // Target Render (Kombinasi)
+            // Target Render
             const targetContainer = document.getElementById('target-list-container');
             if (targetContainer) targetContainer.innerHTML = '';
             targetList.forEach(item => {
@@ -1011,6 +1013,7 @@
             });
 
             renderCategoryDropdown();
+            renderTargetDropdown();
             applySensor();
         };
 
@@ -1052,6 +1055,7 @@
             let nominal = parseInt(document.getElementById('input-nominal').value);
             const dompet = document.getElementById('input-dompet').value;
             const kategori = document.getElementById('input-kategori-anggaran').value;
+            const targetId = document.getElementById('input-target-alokasi')?.value;
             const tanggal = document.getElementById('input-tanggal').value;
             let nama = document.getElementById('input-nama').value;
             let dompetTujuan = '';
@@ -1065,16 +1069,34 @@
             }
 
             try {
+                // 1. Simpan Transaksi Ke Firestore
                 await addDoc(collection(db, "kas"), {
                     nama: nama,
                     nominal: nominal,
                     dompet: dompet,
                     dompetTujuan: dompetTujuan,
                     kategori: tipe === 'transfer' ? 'Transfer' : kategori,
+                    targetId: targetId || '',
                     tipe: tipe,
                     tanggal: tanggal,
                     timestamp: serverTimestamp()
                 });
+
+                // 2. Jika Memilih Amplop Target, Otomatis Update Dana Terkumpul di Target
+                if (targetId) {
+                    const targetItem = targetList.find(t => t.id === targetId);
+                    if (targetItem) {
+                        const nominalAbs = Math.abs(nominal);
+                        const newTerkumpul = tipe === 'keluar' 
+                            ? targetItem.terkumpul + nominalAbs 
+                            : Math.max(0, targetItem.terkumpul - nominalAbs);
+
+                        await updateDoc(doc(db, "target", targetId), {
+                            terkumpul: newTerkumpul
+                        });
+                    }
+                }
+
                 document.getElementById('form-kas').reset();
                 document.getElementById('input-tanggal').valueAsDate = new Date();
                 toggleModalTransaksi();
@@ -1122,25 +1144,6 @@
                 btn.innerHTML = 'Simpan Perubahan Saldo';
             }
         });
-
-            // Tambahkan logika ini di dalam submit form-kas SEBELUM atau SESUDAH addDoc("kas"):
-            const targetId = document.getElementById('input-target-alokasi')?.value;
-
-            if (targetId) {
-                const targetItem = targetList.find(t => t.id === targetId);
-                if (targetItem) {
-                    // Jika transaksi KELUAR -> Tambah dana terkumpul di amplop target
-                    // Jika transaksi MASUK -> Kurangi dana dari amplop target
-                    const nominalAbs = Math.abs(nominal);
-                    const newTerkumpul = tipe === 'keluar' 
-                        ? targetItem.terkumpul + nominalAbs 
-                        : Math.max(0, targetItem.terkumpul - nominalAbs);
-
-                    await updateDoc(doc(db, "target", targetId), {
-                        terkumpul: newTerkumpul
-                    });
-                }
-            }
 
         document.getElementById('form-edit-target').addEventListener('submit', async (e) => {
             e.preventDefault();
