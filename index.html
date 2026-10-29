@@ -219,7 +219,7 @@
 
                     <div id="wrapper-ocr" class="mb-4">
                         <button type="button" id="btn-scan" class="w-full bg-indigo-50 text-indigo-600 font-bold py-3 rounded-xl border border-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-100 transition shadow-sm text-sm">
-                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR nya Kurang Pintar)
+                            <i class="fa-solid fa-camera"></i> Scan Struk (OCR nya Kurang Pinter)
                         </button>
                         <input type="file" id="input-file-ocr" accept="image/*" capture="environment" class="hidden">
                         <div id="ocr-status" class="text-xs text-center font-medium mt-2 hidden text-indigo-500"></div>
@@ -456,22 +456,26 @@
         let targetList = [];
         let dompetSaldoMap = { BCA: 0, BSI: 0, BNI: 0, BRI: 0, ShopeePay: 0, OVO: 0, Flazz: 0 };
 
-        let kategoriList = [
-            { id: '1', nama: 'Kebutuhan', limit: 2000000, icon: 'fa-house' },
-            { id: '2', nama: 'Keinginan', limit: 1500000, icon: 'fa-sparkles' },
-            { id: '3', nama: 'Keluarga & Sosial', limit: 500000, icon: 'fa-users' },
-            { id: '4', nama: 'Pengembangan Diri', limit: 300000, icon: 'fa-graduation-cap' },
-            { id: '5', nama: 'Masa Depan', limit: 0, icon: 'fa-piggy-bank' }
+        // Kategori Default jika Firestore belum ada data
+        const defaultKategoriPengeluaran = [
+            { nama: 'Kebutuhan', limit: 2000000, icon: 'fa-house', tipe: 'keluar' },
+            { nama: 'Keinginan', limit: 1500000, icon: 'fa-sparkles', tipe: 'keluar' },
+            { nama: 'Keluarga & Sosial', limit: 500000, icon: 'fa-users', tipe: 'keluar' },
+            { nama: 'Pengembangan Diri', limit: 300000, icon: 'fa-graduation-cap', tipe: 'keluar' },
+            { nama: 'Masa Depan', limit: 0, icon: 'fa-piggy-bank', tipe: 'keluar' }
         ];
 
-        let kategoriMasukList = [
-            { id: 'm1', nama: 'Gaji' },
-            { id: 'm2', nama: 'Sampingan' },
-            { id: 'm3', nama: 'Bonus' },
-            { id: 'm4', nama: 'Jualan' },
-            { id: 'm5', nama: 'Penyesuaian Saldo' },
-            { id: 'm6', nama: 'Lainnya' }
+        const defaultKategoriPemasukan = [
+            { nama: 'Gaji', tipe: 'masuk' },
+            { nama: 'Sampingan', tipe: 'masuk' },
+            { nama: 'Bonus', tipe: 'masuk' },
+            { nama: 'Jualan', tipe: 'masuk' },
+            { nama: 'Penyesuaian Saldo', tipe: 'masuk' },
+            { nama: 'Lainnya', tipe: 'masuk' }
         ];
+
+        let kategoriList = [...defaultKategoriPengeluaran];
+        let kategoriMasukList = [...defaultKategoriPemasukan];
 
         let isSensorActive = false;
         let chartKomposisiInstance = null;
@@ -1196,24 +1200,35 @@
             }
         });
 
-        document.getElementById('form-kategori').addEventListener('submit', (e) => {
+        // SIMPAN KATEGORI KE FIRESTORE (PERMANEN)
+        document.getElementById('form-kategori').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
             const nama = document.getElementById('input-kat-nama').value;
             const limit = parseInt(document.getElementById('input-kat-limit').value) || 0;
             const tipeActive = document.querySelector('input[name="tipe"]:checked')?.value || 'keluar';
             
-            if (tipeActive === 'masuk') {
-                kategoriMasukList.push({ id: Date.now().toString(), nama: nama });
-            } else {
-                kategoriList.push({ id: Date.now().toString(), nama: nama, limit: limit, icon: 'fa-tag' });
-            }
+            try {
+                await addDoc(collection(db, "kategori"), {
+                    nama: nama,
+                    limit: limit,
+                    tipe: tipeActive,
+                    icon: 'fa-tag',
+                    timestamp: serverTimestamp()
+                });
 
-            document.getElementById('form-kategori').reset();
-            toggleModalKat();
-            updateUI();
+                document.getElementById('form-kategori').reset();
+                toggleModalKat();
+            } catch (err) {
+                alert("Gagal menambahkan kategori.");
+            } finally {
+                btn.innerHTML = 'Simpan Kategori';
+            }
         });
 
-        // REALTIME LISTENERS
+        // REALTIME LISTENERS FIRESTORE
         let isFirstLoad = true;
         let previousCount = 0;
 
@@ -1238,6 +1253,26 @@
         onSnapshot(query(collection(db, "target"), orderBy("timestamp", "desc")), (snapshot) => {
             targetList = [];
             snapshot.forEach(doc => { targetList.push({ id: doc.id, ...doc.data() }); });
+            updateUI();
+        });
+
+        // REAL-TIME LISTENER KATEGORI
+        onSnapshot(query(collection(db, "kategori"), orderBy("timestamp", "asc")), (snapshot) => {
+            const customKatKeluar = [];
+            const customKatMasuk = [];
+
+            snapshot.forEach(doc => {
+                const data = { id: doc.id, ...doc.data() };
+                if (data.tipe === 'masuk') {
+                    customKatMasuk.push(data);
+                } else {
+                    customKatKeluar.push(data);
+                }
+            });
+
+            kategoriList = [...defaultKategoriPengeluaran, ...customKatKeluar];
+            kategoriMasukList = [...defaultKategoriPemasukan, ...customKatMasuk];
+            
             updateUI();
         });
     </script>
