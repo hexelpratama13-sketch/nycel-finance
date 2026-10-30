@@ -527,6 +527,7 @@
         let kategoriMasukList = [...defaultKategoriPemasukan];
 
         let isSensorActive = false;
+        let isModalOpening = false;
         let chartKomposisiInstance = null;
         let chartTrenInstance = null;
 
@@ -821,11 +822,16 @@
         const toggleModalEditTarget = setupModal('modal-edit-target', 'modal-edit-target-content', null, '.btn-tutup-edit-target');
 
         window.openEditDompetModal = (namaDompet, currentBalance) => {
+            if (isModalOpening) return;
+            isModalOpening = true;
+
             document.getElementById('edit-dompet-nama').value = namaDompet;
             document.getElementById('edit-dompet-title').value = namaDompet;
             document.getElementById('edit-dompet-current').value = formatRupiah(currentBalance);
             document.getElementById('edit-dompet-new').value = currentBalance;
             toggleModalEditDompet();
+
+            setTimeout(() => { isModalOpening = false; }, 400);
         };
 
         window.openEditTargetModal = (id, nama, terkumpul, target) => {
@@ -1086,7 +1092,7 @@
                 const currentBal = dompetSaldoMap[w.nama] || 0;
                 if (homeWallet) {
                     homeWallet.innerHTML += `
-                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition text-white" style="background: linear-gradient(135deg, ${walletCardColors[w.nama][0]}, ${walletCardColors[w.nama][1]})">
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" ontouchend="openEditDompetModal('${w.nama}', ${currentBal})" class="min-w-[105px] p-3.5 rounded-[1.25rem] shadow-md flex-shrink-0 relative overflow-hidden cursor-pointer hover:opacity-95 transition text-white" style="background: linear-gradient(135deg, ${walletCardColors[w.nama][0]}, ${walletCardColors[w.nama][1]})">
                             <div class="flex items-center justify-between mb-2.5">
                                 <img src="${walletLogos[w.nama]}" alt="Logo ${w.nama}" class="wallet-bank-logo-home">
                                 <i class="fa-solid fa-wifi rotate-90 text-sm opacity-70" aria-hidden="true"></i>
@@ -1098,7 +1104,7 @@
                 }
                 if (detailWallet) {
                     detailWallet.innerHTML += `
-                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="wallet-atm" style="--card-light: ${walletCardColors[w.nama][0]}; --card-dark: ${walletCardColors[w.nama][1]}">
+                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" ontouchend="openEditDompetModal('${w.nama}', ${currentBal})" class="wallet-atm active:scale-95 transition-transform" style="--card-light: ${walletCardColors[w.nama][0]}; --card-dark: ${walletCardColors[w.nama][1]}">
                             <div class="wallet-atm-header">
                                 <img src="${walletLogos[w.nama]}" alt="Logo ${w.nama}" class="wallet-bank-logo">
                                 <i class="fa-solid fa-wifi rotate-90 text-lg opacity-70" aria-hidden="true"></i>
