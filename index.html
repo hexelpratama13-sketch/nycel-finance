@@ -714,8 +714,7 @@
         }
 
         walletStack.addEventListener('pointerdown', event => {
-            if (event.pointerType === 'touch' && !event.isPrimary) return;
-            if (event.pointerType !== 'touch' && (!event.isPrimary || event.button !== 0)) return;
+            if (!event.isPrimary || event.button !== 0) return;
             suppressWalletClick = false;
             walletGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, dragging: false };
         });
@@ -746,12 +745,6 @@
         }
         window.addEventListener('pointerup', finishWalletGesture);
         walletStack.addEventListener('pointercancel', finishWalletGesture);
-        walletStack.addEventListener('click', event => {
-            if (!suppressWalletClick) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            suppressWalletClick = false;
-        }, true);
         walletStack.addEventListener('keydown', event => {
             if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                 event.preventDefault();
