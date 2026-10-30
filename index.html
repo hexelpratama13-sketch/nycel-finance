@@ -735,6 +735,10 @@
         function finishWalletGesture(event) {
             if (!walletGesture || walletGesture.id !== event.pointerId) return;
             suppressWalletClick = walletGesture.dragging;
+            if (!walletGesture.dragging) {
+                walletGesture = null;
+                return;
+            }
             if (event.type === 'pointerup' && Math.abs(walletGesture.dx) > 50) {
                 activeWallet += walletGesture.dx < 0 ? 1 : -1;
             }
@@ -745,6 +749,13 @@
         }
         window.addEventListener('pointerup', finishWalletGesture);
         walletStack.addEventListener('pointercancel', finishWalletGesture);
+        walletStack.addEventListener('click', event => {
+            if (suppressWalletClick) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                suppressWalletClick = false;
+            }
+        }, true);
         walletStack.addEventListener('keydown', event => {
             if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
                 event.preventDefault();
