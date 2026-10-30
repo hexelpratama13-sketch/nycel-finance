@@ -713,12 +713,6 @@
             }));
         }
 
-        walletStack.addEventListener('click', event => {
-            if (!suppressWalletClick) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            suppressWalletClick = false;
-        }, true);
         walletStack.addEventListener('pointerdown', event => {
             if (!event.isPrimary || event.button !== 0) return;
             suppressWalletClick = false;
@@ -752,11 +746,10 @@
         window.addEventListener('pointerup', finishWalletGesture);
         walletStack.addEventListener('pointercancel', finishWalletGesture);
         walletStack.addEventListener('click', event => {
-            if (suppressWalletClick) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                suppressWalletClick = false;
-            }
+            if (!suppressWalletClick) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            suppressWalletClick = false;
         }, true);
         walletStack.addEventListener('keydown', event => {
             if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
