@@ -997,10 +997,21 @@
             if (notifContainer) notifContainer.innerHTML = '';
 
             transaksiList.forEach(item => {
-                totalSaldo += item.nominal;
-                if(dompetSaldoMap[item.dompet] !== undefined) dompetSaldoMap[item.dompet] += item.nominal;
-                if(item.tipe === 'transfer' && item.dompetTujuan) {
-                    if(dompetSaldoMap[item.dompetTujuan] !== undefined) dompetSaldoMap[item.dompetTujuan] += Math.abs(item.nominal);
+                // BUG FIX: Jika tipe 'transfer', jgn kurangi totalSaldo keseluruhan!
+                if (item.tipe !== 'transfer') {
+                    totalSaldo += item.nominal;
+                }
+
+                // Kalkulasi saldo spesifik per dompet
+                if (dompetSaldoMap[item.dompet] !== undefined) {
+                    dompetSaldoMap[item.dompet] += item.nominal;
+                }
+                
+                // Jika transfer, tambahkan saldo ke dompet tujuan
+                if (item.tipe === 'transfer' && item.dompetTujuan) {
+                    if (dompetSaldoMap[item.dompetTujuan] !== undefined) {
+                        dompetSaldoMap[item.dompetTujuan] += Math.abs(item.nominal);
+                    }
                 }
 
                 const isMasuk = item.tipe === 'masuk';
