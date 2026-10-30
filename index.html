@@ -146,6 +146,22 @@
             <div id="dompet-detail-container" role="region" aria-label="Kartu dompet" tabindex="0"></div>
             <div id="dompet-pagination" class="flex justify-center items-center gap-2 mt-4" aria-label="Pilih kartu dompet"></div>
             <p class="text-center text-xs text-gray-500 mt-2">Geser kartu untuk berganti akun</p>
+            <div class="mt-6">
+                <p id="dompet-month-label" class="text-xs font-semibold text-gray-500 mb-3"></p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <p class="text-[11px] font-bold text-emerald-600">Total Pemasukan</p>
+                        <p id="dompet-income" class="text-sm font-extrabold text-gray-800 mt-1 break-words format-money" data-value="0">Rp 0</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+                        <p class="text-[11px] font-bold text-red-500">Total Pengeluaran</p>
+                        <p id="dompet-expense" class="text-sm font-extrabold text-gray-800 mt-1 break-words format-money" data-value="0">Rp 0</p>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2">Termasuk transfer masuk dan keluar dompet ini.</p>
+            </div>
+            <h3 id="dompet-ledger-title" class="text-[15px] font-bold text-gray-800 mt-6 mb-4">Mutasi Terakhir</h3>
+            <div id="dompet-ledger-list" class="bg-white rounded-[1.25rem] p-5 shadow-sm space-y-4"></div>
         </div>
 
         <!-- ================= VIEW 3: ANALISIS ================= -->
@@ -711,6 +727,7 @@
                 button.onclick = () => { activeWallet = index; updateWalletStack(); };
                 return button;
             }));
+            renderWalletDetails();
         }
 
         walletStack.addEventListener('pointerdown', event => {
@@ -999,6 +1016,38 @@
             }
         };
 
+        function renderWalletDetails() {
+            const wallet = walletStack.children[activeWallet]?.dataset.wallet;
+            if (!wallet) return;
+            const now = new Date();
+            const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const items = transaksiList.filter(item => item.dompet === wallet ||
+                (item.tipe === 'transfer' && item.dompetTujuan === wallet));
+            let income = 0;
+            let expense = 0;
+            const ledger = items.map(item => {
+                const amount = item.tipe === 'transfer'
+                    ? (item.dompetTujuan === wallet ? Math.abs(item.nominal) : 0) -
+                      (item.dompet === wallet ? Math.abs(item.nominal) : 0)
+                    : item.nominal;
+                if (item.tanggal?.slice(0, 7) === month) {
+                    income += Math.max(amount, 0);
+                    expense += Math.max(-amount, 0);
+                }
+                if (item.tipe !== 'transfer') return item;
+                return { ...item, nominal: amount, tipe: amount > 0 ? 'masuk' : 'keluar',
+                    nama: `${item.nama} (${amount > 0 ? 'Transfer masuk' : 'Transfer keluar'})`,
+                    dompet: `${item.dompet} &rarr; ${item.dompetTujuan}` };
+            });
+            document.getElementById('dompet-month-label').textContent = `${wallet} · ${now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+            document.getElementById('dompet-income').dataset.value = income;
+            document.getElementById('dompet-expense').dataset.value = expense;
+            const label = ['BCA', 'BSI', 'BNI', 'BRI'].includes(wallet) ? `Bank ${wallet}` : wallet;
+            document.getElementById('dompet-ledger-title').textContent = `Mutasi Terakhir ${label}`;
+            renderGroupedLedger(document.getElementById('dompet-ledger-list'), ledger);
+            applySensor();
+        }
+
         const updateUI = () => {
             let totalSaldo = 0;
             dompetSaldoMap = { BCA: 0, BSI: 0, BNI: 0, BRI: 0, ShopeePay: 0, OVO: 0, Flazz: 0 };
@@ -1108,7 +1157,7 @@
                 }
                 if (detailWallet) {
                     detailWallet.innerHTML += `
-                        <div onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="wallet-atm active:scale-95 transition-transform" style="--card-light: ${walletCardColors[w.nama][0]}; --card-dark: ${walletCardColors[w.nama][1]}">
+                        <div data-wallet="${w.nama}" onclick="openEditDompetModal('${w.nama}', ${currentBal})" class="wallet-atm active:scale-95 transition-transform" style="--card-light: ${walletCardColors[w.nama][0]}; --card-dark: ${walletCardColors[w.nama][1]}">
                             <div class="wallet-atm-header">
                                 <img src="${walletLogos[w.nama]}" alt="Logo ${w.nama}" class="wallet-bank-logo">
                                 <i class="fa-solid fa-wifi rotate-90 text-lg opacity-70" aria-hidden="true"></i>
