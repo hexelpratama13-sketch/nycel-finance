@@ -714,7 +714,8 @@
         }
 
         walletStack.addEventListener('pointerdown', event => {
-            if (!event.isPrimary || event.button !== 0) return;
+            if (event.pointerType === 'touch' && !event.isPrimary) return;
+            if (event.pointerType !== 'touch' && (!event.isPrimary || event.button !== 0)) return;
             suppressWalletClick = false;
             walletGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, dragging: false };
         });
